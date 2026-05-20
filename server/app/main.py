@@ -5,7 +5,10 @@ from app.api.routes import router
 from app.core.config import settings
 
 
-app = FastAPI(title="SQL Query Chatbot API")
+app = FastAPI(
+    title="SQL Query Chatbot API",
+    docs_url="/swagger",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,4 +24,3 @@ app.include_router(router, prefix="/api")
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
-
