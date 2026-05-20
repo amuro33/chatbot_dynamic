@@ -1,6 +1,4 @@
 from fastapi import APIRouter, HTTPException
-from httpx import HTTPStatusError, RequestError
-
 from app.models.contracts import ExecuteRequest, ExecuteResponse, SearchRequest, SearchResponse
 from app.services.llm_client import llm_client
 from app.services.mcp_client import mcp_client
@@ -35,9 +33,7 @@ async def search(request: SearchRequest) -> SearchResponse:
             response.answer = f"SQL 후보 {len(response.candidates)}개를 찾았습니다."
 
         return response
-    except HTTPStatusError as exc:
-        raise HTTPException(status_code=502, detail=f"MCP SQL search failed: {exc.response.text}") from exc
-    except RequestError as exc:
+    except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=f"MCP SQL search unavailable: {exc}") from exc
 
 
@@ -45,7 +41,5 @@ async def search(request: SearchRequest) -> SearchResponse:
 async def execute(request: ExecuteRequest) -> ExecuteResponse:
     try:
         return await mcp_client.execute_sql(request)
-    except HTTPStatusError as exc:
-        raise HTTPException(status_code=502, detail=f"MCP SQL execute failed: {exc.response.text}") from exc
-    except RequestError as exc:
+    except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=f"MCP SQL execute unavailable: {exc}") from exc

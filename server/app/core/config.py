@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "local"
     client_origin: str = "http://localhost:3000"
@@ -15,8 +15,9 @@ class Settings(BaseSettings):
     llm_user_id: str = ""
     llm_user_type: str = ""
 
-    mcp_search_sql_url: AnyHttpUrl = "http://localhost:9000/tools/search-sql"
-    mcp_execute_sql_url: AnyHttpUrl = "http://localhost:9000/tools/execute-sql"
+    mcp_server_url: AnyHttpUrl = "http://localhost:9000/mcp"
+    mcp_search_tool_name: str = "search_sql"
+    mcp_execute_tool_name: str = "execute_sql"
     mcp_timeout_seconds: float = Field(default=60, gt=0)
 
 

@@ -41,9 +41,10 @@ npm run dev
 
 ## MCP 연결 지점
 
-현재 MCP 실제 도구명/라우트가 확정되지 않았으므로 `server/app/services/mcp_client.py`에 HTTP adapter 형태로 분리했습니다.
+서버는 streamable-http MCP 서버에 직접 연결해서 `ClientSession.call_tool()`로 도구를 호출합니다.
 
-- `POST {MCP_SEARCH_SQL_URL}`: body `{ "user_query": "..." }`
-- `POST {MCP_EXECUTE_SQL_URL}`: body `{ "sql_id": "...", "sql": "...", "binds": { ... } }`
+- `MCP_SERVER_URL`: `mcp.run(transport="streamable-http")`로 띄운 MCP 서버 URL
+- `MCP_SEARCH_TOOL_NAME`: SQL 후보 검색 도구명, 기본값 `search_sql`
+- `MCP_EXECUTE_TOOL_NAME`: SQL 실행 도구명, 기본값 `execute_sql`
 
-응답 스키마가 다르면 이 파일만 수정하면 됩니다.
+검색 도구는 `{ "user_query": "..." }`, 실행 도구는 `{ "sql_id": "...", "sql": "...", "binds": { ... } }` 인자를 받는다고 가정합니다. 응답 스키마가 다르면 `server/app/services/mcp_client.py`만 수정하면 됩니다.

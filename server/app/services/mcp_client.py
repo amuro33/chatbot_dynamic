@@ -1,6 +1,10 @@
+import json
+from datetime import timedelta
 from typing import Any
 
-import httpx
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+from mcp.types import CallToolResult
 
 from app.core.config import settings
 from app.models.contracts import ExecuteRequest, ExecuteResponse, SearchRequest, SearchResponse, SqlCandidate
@@ -8,28 +12,24 @@ from app.models.contracts import ExecuteRequest, ExecuteResponse, SearchRequest,
 
 class McpClient:
     async def search_sql(self, request: SearchRequest) -> SearchResponse:
-        async with httpx.AsyncClient(timeout=settings.mcp_timeout_seconds) as client:
-            response = await client.post(
-                str(settings.mcp_search_sql_url),
-                json={"user_query": request.user_query},
-            )
-            response.raise_for_status()
-            data = response.json()
+        data = await self._call_tool(
+            settings.mcp_search_tool_name,
+            {"user_query": request.user_query},
+        )
 
         candidates_payload = data.get("candidates") or data.get("results") or []
         candidates = [SqlCandidate.model_validate(item) for item in candidates_payload[:3]]
         return SearchResponse(answer=data.get("answer"), candidates=candidates)
 
     async def execute_sql(self, request: ExecuteRequest) -> ExecuteResponse:
-        payload: dict[str, Any] = {
-            "sql_id": request.candidate_id,
-            "sql": request.sql,
-            "binds": request.binds,
-        }
-        async with httpx.AsyncClient(timeout=settings.mcp_timeout_seconds) as client:
-            response = await client.post(str(settings.mcp_execute_sql_url), json=payload)
-            response.raise_for_status()
-            data = response.json()
+        data = await self._call_tool(
+            settings.mcp_execute_tool_name,
+            {
+                "sql_id": request.candidate_id,
+                "sql": request.sql,
+                "binds": request.binds,
+            },
+        )
 
         rows = data.get("rows") or data.get("result") or data
         if not isinstance(rows, list):
@@ -49,6 +49,54 @@ class McpClient:
 
         return ExecuteResponse(columns=columns, rows=rows)
 
+    async def _call_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        timeout = timedelta(seconds=settings.mcp_timeout_seconds)
+
+        try:
+            async with streamablehttp_client(
+                str(settings.mcp_server_url),
+                timeout=timeout,
+                sse_read_timeout=timeout,
+            ) as (read, write, _):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    result = await session.call_tool(
+                        tool_name,
+                        arguments=arguments,
+                        read_timeout_seconds=timeout,
+                    )
+        except Exception as exc:
+            raise RuntimeError(str(exc)) from exc
+
+        return self._result_to_dict(result)
+
+    def _result_to_dict(self, result: CallToolResult) -> dict[str, Any]:
+        if result.isError:
+            message = self._content_text(result) or "MCP tool call failed"
+            raise RuntimeError(message)
+
+        if isinstance(result.structuredContent, dict):
+            return result.structuredContent
+
+        text = self._content_text(result)
+        if not text:
+            return {}
+
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"MCP tool returned non-JSON text: {text}") from exc
+        if isinstance(parsed, dict):
+            return parsed
+
+        return {"result": parsed}
+
+    def _content_text(self, result: CallToolResult) -> str:
+        chunks = []
+        for item in result.content:
+            if item.type == "text":
+                chunks.append(item.text)
+        return "\n".join(chunks).strip()
+
 
 mcp_client = McpClient()
-
