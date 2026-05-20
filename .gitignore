@@ -1,0 +1,10 @@
+client/.next/
+client/node_modules/
+client/tsconfig.tsbuildinfo
+server/.venv/
+server/.venv.failed-*/
+server/__pycache__/
+server/app/**/__pycache__/
+.run-logs/
+.env
+.env.local

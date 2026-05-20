@@ -1,0 +1,18 @@
+[project]
+name = "sql-query-chatbot-server"
+version = "0.1.0"
+description = "FastAPI server for MCP-backed SQL search and execution chatbot"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.115.6",
+    "httpx==0.28.1",
+    "pydantic==2.10.4",
+    "pydantic-settings==2.7.1",
+    "uvicorn[standard]==0.34.0",
+]
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+package = false
