@@ -28,6 +28,8 @@ uv run uvicorn app.main:app --reload --port 8000
 
 서버는 Python 3.12 기준입니다. `server/.python-version`과 `server/pyproject.toml`에서 3.12 계열로 고정하고, 의존성은 `uv.lock`으로 잠급니다.
 
+이미 다른 가상환경이 활성화된 셸에서 `uv sync`를 실행하면 `VIRTUAL_ENV ... will be ignored` 경고가 나올 수 있습니다. 이 프로젝트는 `server/.venv`를 기준으로 쓰므로 보통은 `deactivate` 후 다시 실행하면 됩니다. 현재 활성 가상환경에 의존성을 설치하려는 의도가 있을 때만 `uv sync --active`를 사용하세요.
+
 ## 클라이언트 실행
 
 ```bash
