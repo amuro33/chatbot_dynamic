@@ -1,25 +1,36 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, IBM_Plex_Sans_KR } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geist = Geist({
-  subsets: ["latin"],
+const geist = localFont({
+  src: [
+    { path: "./fonts/Geist-Regular.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/Geist-Medium.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/Geist-SemiBold.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/Geist-Bold.ttf", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans-en",
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
+const geistMono = localFont({
+  src: [
+    { path: "./fonts/GeistMono-Regular.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/GeistMono-Medium.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/GeistMono-SemiBold.ttf", weight: "600", style: "normal" },
+  ],
   variable: "--font-mono",
-  weight: ["400", "500", "600"],
   display: "swap",
 });
 
-const ibmPlexKr = IBM_Plex_Sans_KR({
-  subsets: ["latin"],
+const ibmPlexKr = localFont({
+  src: [
+    { path: "./fonts/IBMPlexSansKR-Regular.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/IBMPlexSansKR-Medium.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/IBMPlexSansKR-SemiBold.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/IBMPlexSansKR-Bold.ttf", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans-kr",
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
