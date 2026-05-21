@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import timedelta
 from typing import Any
@@ -7,7 +8,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import CallToolResult
 
 from app.core.config import settings
-from app.models.contracts import ExecuteRequest, ExecuteResponse, SearchRequest, SearchResponse, SqlCandidate
+from app.models.contracts import ExecuteRequest, ExecuteResponse, QueryLogOption, SearchRequest, SearchResponse, SqlCandidate
 
 
 class McpClient:
@@ -19,15 +20,19 @@ class McpClient:
 
         candidates_payload = self._search_candidates_payload(data)
         candidates = [self._candidate_from_payload(item) for item in candidates_payload[:3]]
+        recent_options = await asyncio.gather(
+            *(self._recent_options_for_candidate(candidate) for candidate in candidates),
+        )
+        for candidate, options in zip(candidates, recent_options, strict=False):
+            candidate.recent_options = options
         return SearchResponse(answer=data.get("answer"), candidates=candidates)
 
     async def execute_sql(self, request: ExecuteRequest) -> ExecuteResponse:
         data = await self._call_tool(
             settings.mcp_execute_tool_name,
             {
-                "sql_id": request.candidate_id,
-                "sql": request.sql,
-                "binds": request.binds,
+                "query_id": request.candidate_id,
+                "query_param": request.binds,
             },
         )
 
@@ -90,6 +95,61 @@ class McpClient:
             return parsed
 
         return {"result": parsed}
+
+    async def _recent_options_for_candidate(self, candidate: SqlCandidate) -> list[QueryLogOption]:
+        try:
+            data = await self._call_tool(
+                settings.mcp_query_log_tool_name,
+                {"query_name": candidate.id},
+            )
+        except RuntimeError:
+            return []
+
+        payload = self._log_options_payload(data)
+        return [self._query_log_option_from_payload(candidate.id, index, item) for index, item in enumerate(payload[:5])]
+
+    def _log_options_payload(self, data: dict[str, Any]) -> list[Any]:
+        payload = data.get("logs")
+        if payload is None:
+            payload = data.get("options")
+        if payload is None:
+            payload = data.get("results")
+        if payload is None:
+            payload = data.get("result")
+
+        if payload is None:
+            return []
+        if isinstance(payload, list):
+            return payload
+        if isinstance(payload, dict):
+            return [payload]
+        return []
+
+    def _query_log_option_from_payload(self, query_id: str, index: int, item: Any) -> QueryLogOption:
+        if not isinstance(item, dict):
+            item = {"query_param": {}}
+
+        query_param = (
+            item.get("query_param")
+            or item.get("query_params")
+            or item.get("params")
+            or item.get("parameters")
+            or item.get("binds")
+            or item.get("param")
+            or {}
+        )
+        if not isinstance(query_param, dict):
+            query_param = {}
+
+        label = (
+            self._optional_str(item.get("label"))
+            or self._optional_str(item.get("name"))
+            or self._optional_str(item.get("created_at"))
+            or self._optional_str(item.get("executed_at"))
+            or f"최근 옵션 {index + 1}"
+        )
+        option_id = self._optional_str(item.get("id")) or f"{query_id}:{index}"
+        return QueryLogOption(id=option_id, label=label, query_param=query_param)
 
     def _search_candidates_payload(self, data: dict[str, Any]) -> list[Any]:
         payload = data.get("candidates")

@@ -1,17 +1,33 @@
 "use client";
 
 import { PlayCircle } from "lucide-react";
-import type { SqlCandidate } from "../lib/types";
+import type { QueryLogOption, SqlCandidate } from "../lib/types";
 
 type Props = {
   candidate: SqlCandidate;
   rank: number;
   scoreMax: number;
   selected: boolean;
+  selectedOptionId?: string | null;
   onSelect: (candidate: SqlCandidate) => void;
+  onSelectOption: (candidate: SqlCandidate, option: QueryLogOption) => void;
 };
 
-export function CandidateCard({ candidate, rank, scoreMax, selected, onSelect }: Props) {
+function optionSummary(option: QueryLogOption): string {
+  const keys = Object.keys(option.query_param);
+  if (keys.length === 0) return "파라미터 없음";
+  return keys.slice(0, 4).join(", ");
+}
+
+export function CandidateCard({
+  candidate,
+  rank,
+  scoreMax,
+  selected,
+  selectedOptionId,
+  onSelect,
+  onSelectOption,
+}: Props) {
   const score = typeof candidate.similarity === "number"
     ? candidate.similarity.toLocaleString("ko-KR", { maximumFractionDigits: 2 })
     : "N/A";
@@ -37,6 +53,27 @@ export function CandidateCard({ candidate, rank, scoreMax, selected, onSelect }:
         </div>
       </div>
       <pre className="sql-preview">{candidate.sql}</pre>
+      <div className="recent-options">
+        <div className="recent-options-title">최근 실행 옵션</div>
+        {candidate.recent_options.length > 0 ? (
+          <div className="recent-option-list">
+            {candidate.recent_options.map((option) => (
+              <button
+                className="recent-option"
+                data-selected={selected && selectedOptionId === option.id}
+                key={option.id}
+                onClick={() => onSelectOption(candidate, option)}
+                type="button"
+              >
+                <span>{option.label}</span>
+                <small>{optionSummary(option)}</small>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="param-summary">최근 실행 옵션이 없습니다.</div>
+        )}
+      </div>
       <div className="candidate-header">
         <span className="param-summary">
           바인드 파라미터: {candidate.parameters.length > 0

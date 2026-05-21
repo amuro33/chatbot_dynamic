@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     mcp_server_url: AnyHttpUrl = "http://localhost:9000/mcp"
     mcp_search_tool_name: str = "search_sql"
     mcp_execute_tool_name: str = "execute_sql"
+    mcp_query_log_tool_name: str = "get_query_log"
     mcp_timeout_seconds: float = Field(default=60, gt=0)
 
 

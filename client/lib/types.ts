@@ -17,6 +17,13 @@ export type SqlCandidate = {
   sql: string;
   similarity?: number | null;
   parameters: BindParameter[];
+  recent_options: QueryLogOption[];
+};
+
+export type QueryLogOption = {
+  id: string;
+  label: string;
+  query_param: Record<string, unknown>;
 };
 
 export type SearchResponse = {
@@ -28,4 +35,3 @@ export type ExecuteResponse = {
   columns: string[];
   rows: Record<string, unknown>[];
 };
-

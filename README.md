@@ -46,5 +46,6 @@ npm run dev
 - `MCP_SERVER_URL`: `mcp.run(transport="streamable-http")`로 띄운 MCP 서버 URL
 - `MCP_SEARCH_TOOL_NAME`: SQL 후보 검색 도구명, 기본값 `search_sql`
 - `MCP_EXECUTE_TOOL_NAME`: SQL 실행 도구명, 기본값 `execute_sql`
+- `MCP_QUERY_LOG_TOOL_NAME`: 최근 실행 옵션 조회 도구명, 기본값 `get_query_log`
 
-검색 도구는 `{ "user_query": "..." }`, 실행 도구는 `{ "sql_id": "...", "sql": "...", "binds": { ... } }` 인자를 받는다고 가정합니다. 응답 스키마가 다르면 `server/app/services/mcp_client.py`만 수정하면 됩니다.
+검색 도구는 `{ "user_query": "..." }`, 최근 실행 옵션 조회 도구는 `{ "query_name": "..." }`, 실행 도구는 `{ "query_id": "...", "query_param": { ... } }` 인자를 받는다고 가정합니다. 응답 스키마가 다르면 `server/app/services/mcp_client.py`만 수정하면 됩니다.

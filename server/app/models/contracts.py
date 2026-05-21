@@ -16,6 +16,12 @@ class BindParameter(BaseModel):
     options: list[str] | None = None
 
 
+class QueryLogOption(BaseModel):
+    id: str
+    label: str
+    query_param: dict[str, Any] = Field(default_factory=dict)
+
+
 class SqlCandidate(BaseModel):
     id: str
     title: str
@@ -23,6 +29,7 @@ class SqlCandidate(BaseModel):
     sql: str
     similarity: float | None = None
     parameters: list[BindParameter] = Field(default_factory=list)
+    recent_options: list[QueryLogOption] = Field(default_factory=list)
 
 
 class SearchRequest(BaseModel):

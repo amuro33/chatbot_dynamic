@@ -238,6 +238,55 @@ button {
   white-space: pre-wrap;
 }
 
+.recent-options {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.recent-options-title {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recent-option-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.recent-option {
+  align-items: start;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: grid;
+  gap: 4px;
+  min-height: 56px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.recent-option[data-selected="true"] {
+  background: #d9f0ec;
+  border-color: var(--accent);
+}
+
+.recent-option span,
+.recent-option small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-option small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .param-summary {
   color: var(--muted);
   font-size: 13px;

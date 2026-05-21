@@ -3,7 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Bot, Send } from "lucide-react";
 import { executeSql, searchSql } from "../lib/api";
-import type { ExecuteResponse, SearchResponse, SqlCandidate } from "../lib/types";
+import type { ExecuteResponse, QueryLogOption, SearchResponse, SqlCandidate } from "../lib/types";
 import { CandidateCard } from "../components/CandidateCard";
 import { BindParameterForm } from "../components/BindParameterForm";
 import { ResultGrid } from "../components/ResultGrid";
@@ -30,6 +30,7 @@ export default function Home() {
   ]);
   const [searchResponse, setSearchResponse] = useState<SearchResponse | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<SqlCandidate | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [bindValues, setBindValues] = useState<Record<string, unknown>>({});
   const [result, setResult] = useState<ExecuteResponse | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -61,6 +62,7 @@ export default function Home() {
     setIsSearching(true);
     setSearchResponse(null);
     setSelectedCandidate(null);
+    setSelectedOptionId(null);
     setBindValues({});
     setResult(null);
     setMessages((current) => [...current, { role: "user", content: trimmed }]);
@@ -87,7 +89,16 @@ export default function Home() {
 
   function selectCandidate(candidate: SqlCandidate) {
     setSelectedCandidate(candidate);
+    setSelectedOptionId(null);
     setBindValues(initialValues(candidate));
+    setResult(null);
+    setError(null);
+  }
+
+  function selectRecentOption(candidate: SqlCandidate, option: QueryLogOption) {
+    setSelectedCandidate(candidate);
+    setSelectedOptionId(option.id);
+    setBindValues(option.query_param);
     setResult(null);
     setError(null);
   }
@@ -159,9 +170,11 @@ export default function Home() {
                     candidate={candidate}
                     key={candidate.id}
                     onSelect={selectCandidate}
+                    onSelectOption={selectRecentOption}
                     rank={index + 1}
                     scoreMax={maxCandidateScore}
                     selected={selectedCandidate?.id === candidate.id}
+                    selectedOptionId={selectedOptionId}
                   />
                 ))}
               </div>
