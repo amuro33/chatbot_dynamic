@@ -179,11 +179,6 @@ button {
   justify-content: space-between;
 }
 
-.candidate-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
 .candidate h2 {
   font-size: 14px;
   font-weight: 700;
@@ -231,21 +226,6 @@ button {
   background: var(--accent-strong);
   border-radius: inherit;
   height: 100%;
-}
-
-.sql-preview {
-  background: #f8fbff;
-  border: 1px solid #bfdbfe;
-  border-left: 3px solid #3b82f6;
-  border-radius: 8px;
-  color: #1e3a8a;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 11px;
-  line-height: 1.35;
-  max-height: 92px;
-  overflow: auto;
-  padding: 7px 9px;
-  white-space: pre-wrap;
 }
 
 .recent-options {

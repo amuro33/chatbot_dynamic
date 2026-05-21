@@ -227,11 +227,32 @@ class McpClient:
         )
         return SqlCandidate(
             id=api_id,
-            title=self._optional_str(item.get("title")) or api_id,
-            description=self._optional_str(item.get("description")) or f"API ID: {api_id}",
+            title=self._candidate_title(item, api_id),
+            description=self._candidate_description(item, api_id),
             sql=self._optional_str(item.get("sql")) or "",
             similarity=similarity,
             parameters=item.get("parameters") if isinstance(item.get("parameters"), list) else [],
+        )
+
+    def _candidate_title(self, item: dict[str, Any], api_id: str) -> str:
+        return (
+            self._optional_str(item.get("title"))
+            or self._optional_str(item.get("description"))
+            or self._optional_str(item.get("api_description"))
+            or self._optional_str(item.get("query_description"))
+            or self._optional_str(item.get("summary"))
+            or api_id
+        )
+
+    def _candidate_description(self, item: dict[str, Any], api_id: str) -> str:
+        return (
+            self._optional_str(item.get("description"))
+            or self._optional_str(item.get("api_description"))
+            or self._optional_str(item.get("query_description"))
+            or self._optional_str(item.get("summary"))
+            or self._optional_str(item.get("desc"))
+            or self._optional_str(item.get("comment"))
+            or api_id
         )
 
     def _optional_str(self, value: Any) -> str | None:

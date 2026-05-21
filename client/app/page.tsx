@@ -115,22 +115,6 @@ export default function Home() {
     }
   }
 
-  function selectCandidate(candidate: SqlCandidate) {
-    setSelectedCandidate(candidate);
-    setSelectedOptionId(null);
-    setQueryParam({});
-    setMessages((current) => [
-      ...withoutPendingExecution(current),
-      {
-        id: messageId(),
-        role: "assistant",
-        type: "execution",
-        candidate,
-        values: {},
-      },
-    ]);
-  }
-
   function selectRecentOption(candidate: SqlCandidate, option: QueryLogOption) {
     setSelectedCandidate(candidate);
     setSelectedOptionId(option.id);
@@ -196,11 +180,10 @@ export default function Home() {
                 <div className="message assistant rich-message" key={message.id}>
                   <div className="candidate-list">
                     {message.candidates.map((candidate, index) => (
-                      <CandidateCard
-                        candidate={candidate}
-                        key={candidate.id}
-                        onSelect={selectCandidate}
-                        onSelectOption={selectRecentOption}
+                        <CandidateCard
+                          candidate={candidate}
+                          key={candidate.id}
+                          onSelectOption={selectRecentOption}
                         rank={index + 1}
                         scoreMax={maxScore}
                         selected={selectedCandidate?.id === candidate.id}

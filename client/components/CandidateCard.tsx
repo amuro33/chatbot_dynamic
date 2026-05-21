@@ -1,6 +1,5 @@
 "use client";
 
-import { PlayCircle } from "lucide-react";
 import type { QueryLogOption, SqlCandidate } from "../lib/types";
 
 type Props = {
@@ -9,7 +8,6 @@ type Props = {
   scoreMax: number;
   selected: boolean;
   selectedOptionId?: string | null;
-  onSelect: (candidate: SqlCandidate) => void;
   onSelectOption: (candidate: SqlCandidate, option: QueryLogOption) => void;
 };
 
@@ -36,7 +34,6 @@ export function CandidateCard({
   scoreMax,
   selected,
   selectedOptionId,
-  onSelect,
   onSelectOption,
 }: Props) {
   const score = typeof candidate.similarity === "number"
@@ -63,7 +60,6 @@ export function CandidateCard({
           </div>
         </div>
       </div>
-      <pre className="sql-preview">{candidate.sql}</pre>
       <div className="recent-options">
         <div className="recent-options-title">최근 실행 옵션</div>
         {candidate.recent_options.length > 0 ? (
@@ -84,12 +80,6 @@ export function CandidateCard({
         ) : (
           <div className="param-summary">최근 실행 옵션이 없습니다.</div>
         )}
-      </div>
-      <div className="candidate-actions">
-        <button className="secondary-button" onClick={() => onSelect(candidate)} type="button">
-          <PlayCircle size={16} />
-          {selected ? "선택됨" : "실행 설정"}
-        </button>
       </div>
     </article>
   );
