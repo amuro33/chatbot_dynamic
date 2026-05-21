@@ -17,8 +17,8 @@ class McpClient:
             {"user_query": request.user_query},
         )
 
-        candidates_payload = data.get("candidates") or data.get("results") or []
-        candidates = [SqlCandidate.model_validate(item) for item in candidates_payload[:3]]
+        candidates_payload = data.get("candidates") or data.get("results") or data.get("result") or []
+        candidates = [self._candidate_from_payload(item) for item in candidates_payload[:3]]
         return SearchResponse(answer=data.get("answer"), candidates=candidates)
 
     async def execute_sql(self, request: ExecuteRequest) -> ExecuteResponse:
@@ -90,6 +90,24 @@ class McpClient:
             return parsed
 
         return {"result": parsed}
+
+    def _candidate_from_payload(self, item: Any) -> SqlCandidate:
+        if not isinstance(item, dict):
+            raise RuntimeError(f"MCP search returned invalid candidate: {item}")
+
+        if "api_id" not in item:
+            return SqlCandidate.model_validate(item)
+
+        api_id = str(item["api_id"])
+        similarity = item.get("similarity", item.get("sumularity"))
+        return SqlCandidate(
+            id=api_id,
+            title=item.get("title") or api_id,
+            description=item.get("description") or f"API ID: {api_id}",
+            sql=item.get("sql") or "",
+            similarity=similarity,
+            parameters=item.get("parameters") or [],
+        )
 
     def _content_text(self, result: CallToolResult) -> str:
         chunks = []
