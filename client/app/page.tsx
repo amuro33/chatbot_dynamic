@@ -242,23 +242,14 @@ export default function Home() {
   return (
     <main className="shell">
       <section className="chat-panel">
-        <header className="topbar">
-          <div className="brand">
-            <div className="brand-mark">S</div>
-            <div>
-              <div style={{ fontWeight: 600, letterSpacing: "-0.01em" }}>
-                SQL Query Chatbot
-              </div>
-              <div className="meta">MCP · streamable-http</div>
-            </div>
-          </div>
-        </header>
-
         <div className="messages">
           {messages.map((message) => {
             if (message.type === "text") {
               return (
-                <div key={message.id}>
+                <div
+                  className={message.role === "user" ? "user-row" : undefined}
+                  key={message.id}
+                >
                   {message.role === "assistant" ? (
                     <div className="assistant-row">
                       <div className="avatar">AI</div>
