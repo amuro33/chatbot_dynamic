@@ -331,9 +331,28 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .recent-options { display: grid; gap: 8px; }
 .option-list { display: grid; gap: 8px; }
 
+/* Radio-style selector on the left of every option */
+.option-selector {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line-2);
+  background: #fff;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.option-row:hover .option-selector {
+  border-color: var(--accent);
+}
+.option-row[data-selected="true"] .option-selector {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
 .option-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   padding: 7px 10px;
@@ -397,7 +416,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   border-radius: 6px;
 }
 
-/* Card footer: author + run */
+/* Card footer: author */
 .sqlcard-foot {
   display: flex;
   align-items: center;
@@ -431,20 +450,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.run-btn {
-  background: var(--text);
-  color: #fff;
-  border: 1px solid var(--text);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: opacity 0.15s;
-}
-.run-btn:hover { opacity: 0.85; }
 
 /* =================================================== */
 /* EXECUTION PANEL — editable                           */

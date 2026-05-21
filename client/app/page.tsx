@@ -69,6 +69,19 @@ function payloadSummary(payload: Record<string, unknown>): string {
     : head || "(파라미터 없음)";
 }
 
+function coerceEditedValue(previous: unknown, value: string): string | number {
+  if (typeof previous !== "number") return value;
+
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+
+  return value;
+}
+
 export default function Home() {
   const [query, setQuery] = useState("웨이퍼 단위 제조 및 측정 데이터");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -160,13 +173,25 @@ export default function Home() {
   function updatePending(key: string, value: string) {
     setPending((prev) =>
       prev
-        ? { ...prev, payload: { ...prev.payload, [key]: value } }
+        ? {
+            ...prev,
+            payload: {
+              ...prev.payload,
+              [key]: coerceEditedValue(prev.payload[key], value),
+            },
+          }
         : prev,
     );
     setMessages((current) =>
       current.map((m) =>
         m.type === "execution"
-          ? { ...m, values: { ...m.values, [key]: value } }
+          ? {
+              ...m,
+              values: {
+                ...m.values,
+                [key]: coerceEditedValue(m.values[key], value),
+              },
+            }
           : m,
       ),
     );
