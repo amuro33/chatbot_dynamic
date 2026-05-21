@@ -174,9 +174,13 @@ button {
 
 .candidate-header {
   align-items: start;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   display: flex;
   gap: 10px;
   justify-content: space-between;
+  padding: 10px 12px;
 }
 
 .candidate h2 {
