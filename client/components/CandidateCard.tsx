@@ -14,9 +14,20 @@ type Props = {
 };
 
 function optionSummary(option: QueryLogOption): string {
-  const keys = Object.keys(option.query_param);
-  if (keys.length === 0) return "파라미터 없음";
-  return keys.slice(0, 4).join(", ");
+  const entries = Object.entries(option.query_param);
+  if (entries.length === 0) return "파라미터 없음";
+
+  const summary = entries
+    .slice(0, 3)
+    .map(([key, value]) => `${key}=${formatOptionValue(value)}`)
+    .join(", ");
+  return entries.length > 3 ? `${summary} 외 ${entries.length - 3}개` : summary;
+}
+
+function formatOptionValue(value: unknown): string {
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  if (!text) return "";
+  return text.length > 24 ? `${text.slice(0, 24)}...` : text;
 }
 
 export function CandidateCard({

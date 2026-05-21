@@ -28,15 +28,13 @@ export function searchSql(userQuery: string): Promise<SearchResponse> {
 
 export function executeSql(
   candidate: SqlCandidate,
-  binds: Record<string, unknown>,
+  queryParam: Record<string, unknown>,
 ): Promise<ExecuteResponse> {
   return request<ExecuteResponse>("/api/sql/execute", {
     method: "POST",
     body: JSON.stringify({
-      candidate_id: candidate.id,
-      sql: candidate.sql,
-      binds,
+      query_id: candidate.id,
+      query_param: queryParam,
     }),
   });
 }
-

@@ -31,8 +31,8 @@ class McpClient:
         data = await self._call_tool(
             settings.mcp_execute_tool_name,
             {
-                "query_id": request.candidate_id,
-                "query_param": request.binds,
+                "query_id": request.query_id,
+                "query_param": request.query_param,
             },
         )
 

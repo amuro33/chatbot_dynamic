@@ -42,9 +42,8 @@ class SearchResponse(BaseModel):
 
 
 class ExecuteRequest(BaseModel):
-    candidate_id: str
-    sql: str
-    binds: dict[str, Any] = Field(default_factory=dict)
+    query_id: str
+    query_param: dict[str, Any] = Field(default_factory=dict)
 
 
 class ExecuteResponse(BaseModel):
