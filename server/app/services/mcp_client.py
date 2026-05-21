@@ -50,6 +50,8 @@ class McpClient:
         else:
             raw_rows = []
 
+        raw_rows = self._json_payload_or_original(raw_rows)
+
         if isinstance(raw_rows, dict):
             raw_rows = [raw_rows]
         rows = [row for row in raw_rows if isinstance(row, dict)] if isinstance(raw_rows, list) else []
@@ -66,6 +68,14 @@ class McpClient:
             columns = ordered
 
         return rows, columns
+
+    def _json_payload_or_original(self, value: Any) -> Any:
+        if not isinstance(value, str):
+            return value
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
 
     async def _call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         timeout = timedelta(seconds=settings.mcp_timeout_seconds)
