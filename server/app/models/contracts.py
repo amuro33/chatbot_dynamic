@@ -16,20 +16,28 @@ class BindParameter(BaseModel):
     options: list[str] | None = None
 
 
+class Author(BaseModel):
+    name: str
+    team: str | None = None
+
+
 class QueryLogOption(BaseModel):
     id: str
-    label: str
+    ran_at: str = ""
     query_param: dict[str, Any] = Field(default_factory=dict)
 
 
 class SqlCandidate(BaseModel):
     id: str
+    workspace: str = ""
     title: str
     description: str
     sql: str
     similarity: float | None = None
     parameters: list[BindParameter] = Field(default_factory=list)
     recent_options: list[QueryLogOption] = Field(default_factory=list)
+    tables: list[str] = Field(default_factory=list)
+    author: Author = Field(default_factory=lambda: Author(name=""))
 
 
 class SearchRequest(BaseModel):
@@ -49,3 +57,5 @@ class ExecuteRequest(BaseModel):
 class ExecuteResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
+    elapsed_ms: int | None = None
+    ran_at: str | None = None

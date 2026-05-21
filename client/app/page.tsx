@@ -3,7 +3,11 @@
 import { FormEvent, useState } from "react";
 import { Bot, Send } from "lucide-react";
 import { executeSql, searchSql } from "../lib/api";
-import type { ExecuteResponse, QueryLogOption, SqlCandidate } from "../lib/types";
+import type {
+  ExecuteResponse,
+  QueryLogOption,
+  SqlCandidate,
+} from "../lib/types";
 import { CandidateCard } from "../components/CandidateCard";
 import { ExecutionPanel } from "../components/ExecutionPanel";
 import { ResultGrid } from "../components/ResultGrid";
@@ -27,6 +31,7 @@ type ExecutionMessage = {
   role: "assistant";
   type: "execution";
   candidate: SqlCandidate;
+  optionId: string;
   values: Record<string, unknown>;
 };
 
@@ -34,26 +39,34 @@ type ResultMessage = {
   id: string;
   role: "assistant";
   type: "result";
-  title: string;
+  candidate: SqlCandidate;
+  payload: Record<string, unknown>;
   result: ExecuteResponse;
 };
 
-type ChatMessage = TextMessage | CandidatesMessage | ExecutionMessage | ResultMessage;
+type ChatMessage =
+  | TextMessage
+  | CandidatesMessage
+  | ExecutionMessage
+  | ResultMessage;
 
 function messageId(): string {
   return crypto.randomUUID();
 }
-function candidateMaxScore(candidates: SqlCandidate[]): number {
-  return Math.max(
-    0,
-    ...candidates.map((candidate) =>
-      typeof candidate.similarity === "number" ? candidate.similarity : 0,
-    ),
-  );
-}
 
 function withoutPendingExecution(messages: ChatMessage[]): ChatMessage[] {
-  return messages.filter((message) => message.type !== "execution");
+  return messages.filter((m) => m.type !== "execution");
+}
+
+function payloadSummary(payload: Record<string, unknown>): string {
+  const entries = Object.entries(payload);
+  const head = entries
+    .slice(0, 2)
+    .map(([k, v]) => `${k}=${String(v ?? "")}`)
+    .join(", ");
+  return entries.length > 2
+    ? `${head} 외 ${entries.length - 2}개`
+    : head || "(파라미터 없음)";
 }
 
 export default function Home() {
@@ -63,14 +76,20 @@ export default function Home() {
       id: messageId(),
       role: "assistant",
       type: "text",
-      content: "질문을 입력하면 검색 점수가 높은 SQL 후보와 최근 실행 옵션을 찾아드립니다.",
+      content:
+        "질문을 입력하면 검색 점수가 높은 SQL 후보와 최근 실행 옵션을 찾아드립니다.",
     },
   ]);
-  const [selectedCandidate, setSelectedCandidate] = useState<SqlCandidate | null>(null);
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [queryParam, setQueryParam] = useState<Record<string, unknown>>({});
   const [isSearching, setIsSearching] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+
+  // Currently pending execution: which candidate + optionId we picked,
+  // and the (possibly edited) payload to run.
+  const [pending, setPending] = useState<{
+    candidate: SqlCandidate;
+    optionId: string;
+    payload: Record<string, unknown>;
+  } | null>(null);
 
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,9 +97,7 @@ export default function Home() {
     if (!trimmed) return;
 
     setIsSearching(true);
-    setSelectedCandidate(null);
-    setSelectedOptionId(null);
-    setQueryParam({});
+    setPending(null);
     setMessages((current) => [
       ...withoutPendingExecution(current),
       { id: messageId(), role: "user", type: "text", content: trimmed },
@@ -94,7 +111,9 @@ export default function Home() {
           id: messageId(),
           role: "assistant",
           type: "text",
-          content: response.answer || `SQL 후보 ${response.candidates.length}개를 찾았습니다.`,
+          content:
+            response.answer ||
+            `SQL 후보 ${response.candidates.length}개를 찾았습니다.`,
         },
         {
           id: messageId(),
@@ -104,7 +123,8 @@ export default function Home() {
         },
       ]);
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "SQL 검색에 실패했습니다.";
+      const message =
+        caught instanceof Error ? caught.message : "SQL 검색에 실패했습니다.";
       setMessages((current) => [
         ...current,
         { id: messageId(), role: "assistant", type: "text", content: message },
@@ -116,42 +136,75 @@ export default function Home() {
   }
 
   function selectRecentOption(candidate: SqlCandidate, option: QueryLogOption) {
-    setSelectedCandidate(candidate);
-    setSelectedOptionId(option.id);
-    setQueryParam(option.query_param);
+    const payload = { ...option.query_param };
+    setPending({ candidate, optionId: option.id, payload });
     setMessages((current) => [
       ...withoutPendingExecution(current),
+      {
+        id: messageId(),
+        role: "user",
+        type: "text",
+        content: `${candidate.id} 의 옵션 선택`,
+      },
       {
         id: messageId(),
         role: "assistant",
         type: "execution",
         candidate,
-        values: option.query_param,
+        optionId: option.id,
+        values: payload,
       },
     ]);
   }
 
-  async function runSelectedCandidate() {
-    if (!selectedCandidate) return;
+  function updatePending(key: string, value: string) {
+    setPending((prev) =>
+      prev
+        ? { ...prev, payload: { ...prev.payload, [key]: value } }
+        : prev,
+    );
+    setMessages((current) =>
+      current.map((m) =>
+        m.type === "execution"
+          ? { ...m, values: { ...m.values, [key]: value } }
+          : m,
+      ),
+    );
+  }
+
+  function cancelPending() {
+    setPending(null);
+    setMessages((current) => withoutPendingExecution(current));
+  }
+
+  async function runPending() {
+    if (!pending) return;
+    const { candidate, payload } = pending;
 
     setIsExecuting(true);
     try {
-      const response = await executeSql(selectedCandidate, queryParam);
+      const response = await executeSql(candidate, payload);
       setMessages((current) => [
         ...withoutPendingExecution(current),
         {
           id: messageId(),
+          role: "user",
+          type: "text",
+          content: `실행 — ${payloadSummary(payload)}`,
+        },
+        {
+          id: messageId(),
           role: "assistant",
           type: "result",
-          title: `${selectedCandidate.title} 실행 결과`,
+          candidate,
+          payload,
           result: response,
         },
       ]);
-      setSelectedCandidate(null);
-      setSelectedOptionId(null);
-      setQueryParam({});
+      setPending(null);
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "SQL 실행에 실패했습니다.";
+      const message =
+        caught instanceof Error ? caught.message : "SQL 실행에 실패했습니다.";
       setMessages((current) => [
         ...current,
         { id: messageId(), role: "assistant", type: "text", content: message },
@@ -163,33 +216,53 @@ export default function Home() {
 
   return (
     <main className="shell">
-      <section className="panel chat-panel">
+      <section className="chat-panel">
+        <header className="topbar">
+          <div className="brand">
+            <div className="brand-mark">S</div>
+            <div>
+              <div style={{ fontWeight: 600, letterSpacing: "-0.01em" }}>
+                SQL Query Chatbot
+              </div>
+              <div className="meta">MCP · streamable-http</div>
+            </div>
+          </div>
+        </header>
+
         <div className="messages">
           {messages.map((message) => {
             if (message.type === "text") {
               return (
-                <div className={`message ${message.role}`} key={message.id}>
-                  {message.content}
+                <div key={message.id}>
+                  {message.role === "assistant" ? (
+                    <div className="assistant-row">
+                      <div className="avatar">AI</div>
+                      <div className="message assistant">{message.content}</div>
+                    </div>
+                  ) : (
+                    <div className="message user">{message.content}</div>
+                  )}
                 </div>
               );
             }
 
             if (message.type === "candidates") {
-              const maxScore = candidateMaxScore(message.candidates);
               return (
-                <div className="message assistant rich-message" key={message.id}>
-                  <div className="candidate-list">
-                    {message.candidates.map((candidate, index) => (
+                <div className="assistant-row" key={message.id}>
+                  <div className="avatar">AI</div>
+                  <div className="rich-body">
+                    <div className="candidate-list">
+                      {message.candidates.map((candidate, index) => (
                         <CandidateCard
-                          candidate={candidate}
                           key={candidate.id}
+                          candidate={candidate}
+                          rank={index + 1}
+                          selected={pending?.candidate.id === candidate.id}
+                          selectedOptionId={pending?.optionId}
                           onSelectOption={selectRecentOption}
-                        rank={index + 1}
-                        scoreMax={maxScore}
-                        selected={selectedCandidate?.id === candidate.id}
-                        selectedOptionId={selectedOptionId}
-                      />
-                    ))}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -197,43 +270,61 @@ export default function Home() {
 
             if (message.type === "execution") {
               return (
-                <div className="message assistant rich-message" key={message.id}>
-                  <ExecutionPanel
-                    candidate={message.candidate}
-                    isExecuting={isExecuting}
-                    onSubmit={runSelectedCandidate}
-                    values={message.values}
-                  />
+                <div className="assistant-row" key={message.id}>
+                  <div className="avatar">AI</div>
+                  <div className="rich-body">
+                    <ExecutionPanel
+                      candidate={message.candidate}
+                      values={message.values}
+                      isExecuting={isExecuting}
+                      onChange={updatePending}
+                      onSubmit={runPending}
+                      onCancel={cancelPending}
+                    />
+                  </div>
                 </div>
               );
             }
 
+            // result
             return (
-              <div className="message assistant rich-message" key={message.id}>
-                <div className="result-message-title">{message.title}</div>
-                <ResultGrid result={message.result} />
+              <div className="assistant-row" key={message.id}>
+                <div className="avatar">AI</div>
+                <div className="rich-body">
+                  <ResultGrid
+                    candidateId={message.candidate.id}
+                    payload={message.payload}
+                    result={message.result}
+                  />
+                </div>
               </div>
             );
           })}
         </div>
 
         <form className="composer" onSubmit={onSearch}>
-          <textarea
-            disabled={isSearching}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-            placeholder="웨이퍼 단위 제조 및 측정 데이터"
-            value={query}
-          />
-          <button className="primary-button" disabled={isSearching || !query.trim()} type="submit">
-            {isSearching ? <Bot size={16} /> : <Send size={16} />}
-            {isSearching ? "검색 중" : "질문 보내기"}
-          </button>
+          <div className="composer-row">
+            <textarea
+              disabled={isSearching}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+              placeholder="질문을 입력하세요 (Enter 전송 · Shift+Enter 줄바꿈)"
+              value={query}
+            />
+            <button
+              className="primary-button"
+              disabled={isSearching || !query.trim()}
+              type="submit"
+            >
+              {isSearching ? <Bot size={16} /> : <Send size={16} />}
+              {isSearching ? "검색 중" : "질문 보내기"}
+            </button>
+          </div>
         </form>
       </section>
     </main>

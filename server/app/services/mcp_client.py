@@ -1,6 +1,7 @@
 import asyncio
 import json
-from datetime import timedelta
+import time
+from datetime import datetime, timedelta
 from typing import Any
 
 from mcp import ClientSession
@@ -8,7 +9,15 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import CallToolResult
 
 from app.core.config import settings
-from app.models.contracts import ExecuteRequest, ExecuteResponse, QueryLogOption, SearchRequest, SearchResponse, SqlCandidate
+from app.models.contracts import (
+    Author,
+    ExecuteRequest,
+    ExecuteResponse,
+    QueryLogOption,
+    SearchRequest,
+    SearchResponse,
+    SqlCandidate,
+)
 
 
 class McpClient:
@@ -29,6 +38,7 @@ class McpClient:
         return SearchResponse(answer=data_dict.get("answer"), candidates=candidates)
 
     async def execute_sql(self, request: ExecuteRequest) -> ExecuteResponse:
+        started = time.perf_counter()
         payload = await self._call_tool(
             settings.mcp_execute_tool_name,
             {
@@ -38,7 +48,9 @@ class McpClient:
         )
 
         rows, columns = self._execute_result_rows_and_columns(payload)
-        return ExecuteResponse(columns=columns, rows=rows)
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        ran_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+        return ExecuteResponse(columns=columns, rows=rows, elapsed_ms=elapsed_ms, ran_at=ran_at)
 
     def _execute_result_rows_and_columns(self, payload: Any) -> tuple[list[dict[str, Any]], list[str]]:
         columns = None
@@ -173,17 +185,20 @@ class McpClient:
         if not isinstance(query_param, dict):
             query_param = {}
 
-        label = (
-            self._optional_str(item.get("label"))
-            or self._optional_str(item.get("name"))
+        ran_at = (
+            self._optional_str(item.get("ran_at"))
             or self._optional_str(item.get("CollectTime"))
-            or self._optional_str(item.get("DatabaseName"))
-            or self._optional_str(item.get("created_at"))
+            or self._optional_str(item.get("collect_time"))
             or self._optional_str(item.get("executed_at"))
-            or f"최근 옵션 {index + 1}"
+            or self._optional_str(item.get("created_at"))
+            or ""
         )
-        option_id = self._optional_str(item.get("id")) or self._optional_str(item.get("CollectTime")) or f"{query_id}:{index}"
-        return QueryLogOption(id=option_id, label=label, query_param=query_param)
+        option_id = (
+            self._optional_str(item.get("id"))
+            or self._optional_str(item.get("CollectTime"))
+            or f"{query_id}:{index}"
+        )
+        return QueryLogOption(id=option_id, ran_at=ran_at, query_param=query_param)
 
     def _json_dict_or_empty(self, value: str) -> dict[str, Any]:
         try:
@@ -227,12 +242,57 @@ class McpClient:
         )
         return SqlCandidate(
             id=api_id,
+            workspace=self._candidate_workspace(item),
             title=self._candidate_title(item, api_id),
             description=self._candidate_description(item, api_id),
             sql=self._optional_str(item.get("sql")) or "",
             similarity=similarity,
             parameters=item.get("parameters") if isinstance(item.get("parameters"), list) else [],
+            tables=self._candidate_tables(item),
+            author=self._candidate_author(item),
         )
+
+    def _candidate_workspace(self, item: dict[str, Any]) -> str:
+        return (
+            self._optional_str(item.get("workspace"))
+            or self._optional_str(item.get("app_name"))
+            or self._optional_str(item.get("application"))
+            or self._optional_str(item.get("workspace_name"))
+            or ""
+        )
+
+    def _candidate_tables(self, item: dict[str, Any]) -> list[str]:
+        raw = (
+            item.get("tables")
+            or item.get("related_tables")
+            or item.get("table_list")
+        )
+        if isinstance(raw, list):
+            return [str(t).strip() for t in raw if str(t).strip()]
+        if isinstance(raw, str):
+            # comma- or space-separated string fallback
+            parts = [p.strip() for p in raw.replace(";", ",").split(",")]
+            return [p for p in parts if p]
+        return []
+
+    def _candidate_author(self, item: dict[str, Any]) -> Author:
+        raw = item.get("author")
+        if isinstance(raw, dict):
+            return Author(
+                name=self._optional_str(raw.get("name")) or "",
+                team=self._optional_str(raw.get("team")),
+            )
+        name = (
+            self._optional_str(item.get("author"))
+            or self._optional_str(item.get("owner"))
+            or self._optional_str(item.get("created_by"))
+            or ""
+        )
+        team = (
+            self._optional_str(item.get("team"))
+            or self._optional_str(item.get("author_team"))
+        )
+        return Author(name=name, team=team)
 
     def _candidate_title(self, item: dict[str, Any], api_id: str) -> str:
         return (
