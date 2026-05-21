@@ -221,6 +221,12 @@ export default function Home() {
           <textarea
             disabled={isSearching}
             onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+              }
+            }}
             placeholder="웨이퍼 단위 제조 및 측정 데이터"
             value={query}
           />
