@@ -238,7 +238,7 @@ export default function Home() {
           <textarea
             disabled={isSearching}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="예: 지난달 VIP 고객별 매출 현황을 보고 싶어"
+            placeholder="웨이퍼 단위 제조 및 측정 데이터"
             value={query}
           />
           <button className="primary-button" disabled={isSearching || !query.trim()} type="submit">

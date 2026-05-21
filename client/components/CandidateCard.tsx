@@ -85,12 +85,7 @@ export function CandidateCard({
           <div className="param-summary">최근 실행 옵션이 없습니다.</div>
         )}
       </div>
-      <div className="candidate-header">
-        <span className="param-summary">
-          바인드 파라미터: {candidate.parameters.length > 0
-            ? candidate.parameters.map((parameter) => parameter.name).join(", ")
-            : "없음"}
-        </span>
+      <div className="candidate-actions">
         <button className="secondary-button" onClick={() => onSelect(candidate)} type="button">
           <PlayCircle size={16} />
           {selected ? "선택됨" : "실행 설정"}
