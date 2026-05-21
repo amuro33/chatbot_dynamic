@@ -17,7 +17,7 @@ class McpClient:
             {"user_query": request.user_query},
         )
 
-        candidates_payload = data.get("candidates") or data.get("results") or data.get("result") or []
+        candidates_payload = self._search_candidates_payload(data)
         candidates = [self._candidate_from_payload(item) for item in candidates_payload[:3]]
         return SearchResponse(answer=data.get("answer"), candidates=candidates)
 
@@ -91,23 +91,64 @@ class McpClient:
 
         return {"result": parsed}
 
+    def _search_candidates_payload(self, data: dict[str, Any]) -> list[Any]:
+        payload = data.get("candidates")
+        if payload is None:
+            payload = data.get("results")
+        if payload is None:
+            payload = data.get("result")
+
+        if payload is None:
+            return []
+        if isinstance(payload, list):
+            return payload
+        if isinstance(payload, dict):
+            return [payload]
+        return []
+
     def _candidate_from_payload(self, item: Any) -> SqlCandidate:
         if not isinstance(item, dict):
-            raise RuntimeError(f"MCP search returned invalid candidate: {item}")
+            item = {"api_id": str(item)}
 
-        if "api_id" not in item:
-            return SqlCandidate.model_validate(item)
+        candidate_id = (
+            item.get("api_id")
+            or item.get("id")
+            or item.get("sql_id")
+            or item.get("candidate_id")
+            or item.get("name")
+        )
+        if candidate_id is None:
+            candidate_id = json.dumps(item, ensure_ascii=False)
 
-        api_id = str(item["api_id"])
-        similarity = item.get("similarity", item.get("sumularity"))
+        api_id = str(candidate_id)
+        similarity = self._optional_float(
+            item.get("similarity", item.get("sumularity", item.get("simularity", item.get("score"))))
+        )
         return SqlCandidate(
             id=api_id,
-            title=item.get("title") or api_id,
-            description=item.get("description") or f"API ID: {api_id}",
-            sql=item.get("sql") or "",
+            title=self._optional_str(item.get("title")) or api_id,
+            description=self._optional_str(item.get("description")) or f"API ID: {api_id}",
+            sql=self._optional_str(item.get("sql")) or "",
             similarity=similarity,
-            parameters=item.get("parameters") or [],
+            parameters=item.get("parameters") if isinstance(item.get("parameters"), list) else [],
         )
+
+    def _optional_str(self, value: Any) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+    def _optional_float(self, value: Any) -> float | None:
+        if value is None or value == "":
+            return None
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        if number > 1 and number <= 100:
+            number = number / 100
+        return max(0, min(number, 1))
 
     def _content_text(self, result: CallToolResult) -> str:
         chunks = []
