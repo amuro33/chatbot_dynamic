@@ -312,6 +312,32 @@ button {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.selected-param-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.selected-param {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.selected-param span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.selected-param strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .field {
   display: grid;
   gap: 6px;

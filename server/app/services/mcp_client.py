@@ -18,17 +18,18 @@ class McpClient:
             {"user_query": request.user_query},
         )
 
-        candidates_payload = self._search_candidates_payload(data)
+        data_dict = data if isinstance(data, dict) else {"result": data}
+        candidates_payload = self._search_candidates_payload(data_dict)
         candidates = [self._candidate_from_payload(item) for item in candidates_payload[:3]]
         recent_options = await asyncio.gather(
             *(self._recent_options_for_candidate(candidate) for candidate in candidates),
         )
         for candidate, options in zip(candidates, recent_options, strict=False):
             candidate.recent_options = options
-        return SearchResponse(answer=data.get("answer"), candidates=candidates)
+        return SearchResponse(answer=data_dict.get("answer"), candidates=candidates)
 
     async def execute_sql(self, request: ExecuteRequest) -> ExecuteResponse:
-        data = await self._call_tool(
+        payload = await self._call_tool(
             settings.mcp_execute_tool_name,
             {
                 "query_id": request.query_id,
@@ -36,11 +37,23 @@ class McpClient:
             },
         )
 
-        rows = data.get("rows") or data.get("result") or data
-        if not isinstance(rows, list):
-            rows = []
+        rows, columns = self._execute_result_rows_and_columns(payload)
+        return ExecuteResponse(columns=columns, rows=rows)
 
-        columns = data.get("columns")
+    def _execute_result_rows_and_columns(self, payload: Any) -> tuple[list[dict[str, Any]], list[str]]:
+        columns = None
+        if isinstance(payload, list):
+            raw_rows = payload
+        elif isinstance(payload, dict):
+            raw_rows = payload.get("rows") or payload.get("data") or payload.get("items") or payload.get("result") or []
+            columns = payload.get("columns")
+        else:
+            raw_rows = []
+
+        if isinstance(raw_rows, dict):
+            raw_rows = [raw_rows]
+        rows = [row for row in raw_rows if isinstance(row, dict)] if isinstance(raw_rows, list) else []
+
         if not columns:
             ordered = []
             seen = set()
@@ -52,9 +65,9 @@ class McpClient:
                             ordered.append(key)
             columns = ordered
 
-        return ExecuteResponse(columns=columns, rows=rows)
+        return rows, columns
 
-    async def _call_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         timeout = timedelta(seconds=settings.mcp_timeout_seconds)
 
         try:
@@ -73,14 +86,14 @@ class McpClient:
         except Exception as exc:
             raise RuntimeError(str(exc)) from exc
 
-        return self._result_to_dict(result)
+        return self._result_to_payload(result)
 
-    def _result_to_dict(self, result: CallToolResult) -> dict[str, Any]:
+    def _result_to_payload(self, result: CallToolResult) -> Any:
         if result.isError:
             message = self._content_text(result) or "MCP tool call failed"
             raise RuntimeError(message)
 
-        if isinstance(result.structuredContent, dict):
+        if isinstance(result.structuredContent, dict | list):
             return result.structuredContent
 
         text = self._content_text(result)
@@ -91,7 +104,7 @@ class McpClient:
             parsed = json.loads(text)
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"MCP tool returned non-JSON text: {text}") from exc
-        if isinstance(parsed, dict):
+        if isinstance(parsed, dict | list):
             return parsed
 
         return {"result": parsed}
@@ -105,7 +118,7 @@ class McpClient:
         except RuntimeError:
             return []
 
-        payload = self._log_options_payload(data)
+        payload = self._log_options_payload(data if isinstance(data, dict) else {"result": data})
         return [self._query_log_option_from_payload(candidate.id, index, item) for index, item in enumerate(payload[:5])]
 
     def _log_options_payload(self, data: dict[str, Any]) -> list[Any]:

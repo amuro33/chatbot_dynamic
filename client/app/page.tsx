@@ -5,7 +5,7 @@ import { Bot, Send } from "lucide-react";
 import { executeSql, searchSql } from "../lib/api";
 import type { ExecuteResponse, QueryLogOption, SearchResponse, SqlCandidate } from "../lib/types";
 import { CandidateCard } from "../components/CandidateCard";
-import { BindParameterForm } from "../components/BindParameterForm";
+import { ExecutionPanel } from "../components/ExecutionPanel";
 import { ResultGrid } from "../components/ResultGrid";
 
 type ChatMessage = {
@@ -13,15 +13,8 @@ type ChatMessage = {
   content: string;
 };
 
-function initialValues(candidate: SqlCandidate | null): Record<string, unknown> {
-  if (!candidate) return {};
-  return Object.fromEntries(
-    candidate.parameters.map((parameter) => [parameter.name, parameter.default ?? ""]),
-  );
-}
-
 export default function Home() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("웨이퍼 단위 제조 및 측정 데이터");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -49,7 +42,7 @@ export default function Home() {
   const status = useMemo(() => {
     if (isSearching) return "SQL 검색 중";
     if (isExecuting) return "SQL 실행 중";
-    if (selectedCandidate) return "실행 파라미터 입력 대기";
+    if (selectedCandidate) return "실행 옵션 선택됨";
     return "대기";
   }, [isExecuting, isSearching, selectedCandidate]);
 
@@ -90,7 +83,7 @@ export default function Home() {
   function selectCandidate(candidate: SqlCandidate) {
     setSelectedCandidate(candidate);
     setSelectedOptionId(null);
-    setBindValues(initialValues(candidate));
+    setBindValues({});
     setResult(null);
     setError(null);
   }
@@ -105,15 +98,6 @@ export default function Home() {
 
   async function runSelectedCandidate() {
     if (!selectedCandidate) return;
-
-    const missing = selectedCandidate.parameters
-      .filter((parameter) => parameter.required)
-      .filter((parameter) => bindValues[parameter.name] === "" || bindValues[parameter.name] == null);
-
-    if (missing.length > 0) {
-      setError(`필수 파라미터를 입력하세요: ${missing.map((parameter) => parameter.name).join(", ")}`);
-      return;
-    }
 
     setError(null);
     setIsExecuting(true);
@@ -183,12 +167,9 @@ export default function Home() {
 
           <div className="execution-area">
             {selectedCandidate ? (
-              <BindParameterForm
+              <ExecutionPanel
                 candidate={selectedCandidate}
                 isExecuting={isExecuting}
-                onChange={(name, value) =>
-                  setBindValues((current) => ({ ...current, [name]: value }))
-                }
                 onSubmit={runSelectedCandidate}
                 values={bindValues}
               />
