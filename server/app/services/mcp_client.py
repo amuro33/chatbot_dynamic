@@ -109,9 +109,15 @@ class McpClient:
         return [self._query_log_option_from_payload(candidate.id, index, item) for index, item in enumerate(payload[:5])]
 
     def _log_options_payload(self, data: dict[str, Any]) -> list[Any]:
+        nested_data = data.get("data")
+        if isinstance(nested_data, dict) and isinstance(nested_data.get("items"), list):
+            return nested_data["items"]
+
         payload = data.get("logs")
         if payload is None:
             payload = data.get("options")
+        if payload is None:
+            payload = data.get("items")
         if payload is None:
             payload = data.get("results")
         if payload is None:
@@ -130,7 +136,8 @@ class McpClient:
             item = {"query_param": {}}
 
         query_param = (
-            item.get("query_param")
+            item.get("QueryParam")
+            or item.get("query_param")
             or item.get("query_params")
             or item.get("params")
             or item.get("parameters")
@@ -138,18 +145,29 @@ class McpClient:
             or item.get("param")
             or {}
         )
+        if isinstance(query_param, str):
+            query_param = self._json_dict_or_empty(query_param)
         if not isinstance(query_param, dict):
             query_param = {}
 
         label = (
             self._optional_str(item.get("label"))
             or self._optional_str(item.get("name"))
+            or self._optional_str(item.get("CollectTime"))
+            or self._optional_str(item.get("DatabaseName"))
             or self._optional_str(item.get("created_at"))
             or self._optional_str(item.get("executed_at"))
             or f"최근 옵션 {index + 1}"
         )
-        option_id = self._optional_str(item.get("id")) or f"{query_id}:{index}"
+        option_id = self._optional_str(item.get("id")) or self._optional_str(item.get("CollectTime")) or f"{query_id}:{index}"
         return QueryLogOption(id=option_id, label=label, query_param=query_param)
+
+    def _json_dict_or_empty(self, value: str) -> dict[str, Any]:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
 
     def _search_candidates_payload(self, data: dict[str, Any]) -> list[Any]:
         payload = data.get("candidates")
