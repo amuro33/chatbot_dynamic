@@ -34,35 +34,7 @@ button {
 
 .shell {
   display: grid;
-  grid-template-rows: auto 1fr;
   min-height: 100vh;
-}
-
-.topbar {
-  align-items: center;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  padding: 14px 24px;
-}
-
-.topbar h1 {
-  font-size: 18px;
-  margin: 0;
-}
-
-.status {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.workspace {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(360px, 520px) minmax(0, 1fr);
-  padding: 18px;
 }
 
 .panel {
@@ -73,9 +45,13 @@ button {
 }
 
 .chat-panel {
+  align-self: stretch;
   display: grid;
   grid-template-rows: 1fr auto;
-  min-height: calc(100vh - 92px);
+  margin: 18px auto;
+  max-width: 1120px;
+  min-height: calc(100vh - 36px);
+  width: calc(100% - 36px);
 }
 
 .messages {
@@ -101,6 +77,14 @@ button {
 .message.assistant {
   align-self: flex-start;
   background: var(--surface-2);
+}
+
+.rich-message {
+  background: transparent;
+  border: 0;
+  max-width: min(100%, 980px);
+  padding: 0;
+  width: 100%;
 }
 
 .composer {
@@ -151,20 +135,13 @@ button {
   opacity: 0.55;
 }
 
-.results-panel {
-  display: grid;
-  gap: 14px;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: calc(100vh - 92px);
-  padding: 16px;
-}
-
 .candidate-list {
   display: grid;
   gap: 12px;
 }
 
 .candidate {
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
@@ -361,8 +338,10 @@ button {
 }
 
 .grid-wrap {
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+  max-height: 420px;
   min-height: 0;
   overflow: auto;
 }
@@ -397,17 +376,31 @@ button {
   padding: 24px;
 }
 
+.grid-empty {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 96px;
+}
+
+.result-message-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
 .error {
   color: var(--danger);
 }
 
 @media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 1fr;
+  .chat-panel {
+    margin: 12px;
+    min-height: auto;
+    width: auto;
   }
 
-  .chat-panel,
-  .results-panel {
-    min-height: auto;
+  .message {
+    max-width: 96%;
   }
 }

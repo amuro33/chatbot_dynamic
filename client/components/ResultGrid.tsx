@@ -18,7 +18,7 @@ export function ResultGrid({ result }: Props) {
   }
 
   if (result.rows.length === 0) {
-    return <div className="empty">조회된 데이터가 없습니다.</div>;
+    return <div className="empty grid-empty">조회된 데이터가 없습니다.</div>;
   }
 
   return (
@@ -44,4 +44,3 @@ export function ResultGrid({ result }: Props) {
     </div>
   );
 }
-
