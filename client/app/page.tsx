@@ -25,7 +25,7 @@ export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "질문을 입력하면 유사도 높은 SQL 3개를 찾아 실행 설정까지 연결합니다.",
+      content: "질문을 입력하면 검색 점수가 높은 SQL 3개를 찾아 실행 설정까지 연결합니다.",
     },
   ]);
   const [searchResponse, setSearchResponse] = useState<SearchResponse | null>(null);
@@ -38,6 +38,12 @@ export default function Home() {
 
   const candidates = searchResponse?.candidates ?? [];
   const hasCandidates = candidates.length > 0;
+  const maxCandidateScore = Math.max(
+    0,
+    ...candidates.map((candidate) =>
+      typeof candidate.similarity === "number" ? candidate.similarity : 0,
+    ),
+  );
 
   const status = useMemo(() => {
     if (isSearching) return "SQL 검색 중";
@@ -145,14 +151,16 @@ export default function Home() {
             <h2>SQL 후보</h2>
             {error ? <div className="error">{error}</div> : null}
             {!hasCandidates && !error ? (
-              <div className="empty">질문을 보내면 유사도 높은 SQL 3개가 표시됩니다.</div>
+              <div className="empty">질문을 보내면 검색 점수가 높은 SQL 3개가 표시됩니다.</div>
             ) : (
               <div className="candidate-list">
-                {candidates.map((candidate) => (
+                {candidates.map((candidate, index) => (
                   <CandidateCard
                     candidate={candidate}
                     key={candidate.id}
                     onSelect={selectCandidate}
+                    rank={index + 1}
+                    scoreMax={maxCandidateScore}
                     selected={selectedCandidate?.id === candidate.id}
                   />
                 ))}
@@ -179,4 +187,3 @@ export default function Home() {
     </main>
   );
 }
-

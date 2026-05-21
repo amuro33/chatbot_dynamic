@@ -21,7 +21,7 @@ class SqlCandidate(BaseModel):
     title: str
     description: str
     sql: str
-    similarity: float | None = Field(default=None, ge=0, le=1)
+    similarity: float | None = None
     parameters: list[BindParameter] = Field(default_factory=list)
 
 
@@ -43,4 +43,3 @@ class ExecuteRequest(BaseModel):
 class ExecuteResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
-

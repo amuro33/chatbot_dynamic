@@ -5,23 +5,36 @@ import type { SqlCandidate } from "../lib/types";
 
 type Props = {
   candidate: SqlCandidate;
+  rank: number;
+  scoreMax: number;
   selected: boolean;
   onSelect: (candidate: SqlCandidate) => void;
 };
 
-export function CandidateCard({ candidate, selected, onSelect }: Props) {
-  const similarity = typeof candidate.similarity === "number"
-    ? `${Math.round(candidate.similarity * 100)}%`
+export function CandidateCard({ candidate, rank, scoreMax, selected, onSelect }: Props) {
+  const score = typeof candidate.similarity === "number"
+    ? candidate.similarity.toLocaleString("ko-KR", { maximumFractionDigits: 2 })
     : "N/A";
+  const scoreRatio = typeof candidate.similarity === "number" && scoreMax > 0
+    ? Math.max(0, Math.min((candidate.similarity / scoreMax) * 100, 100))
+    : 0;
 
   return (
     <article className="candidate">
       <div className="candidate-header">
         <div>
-          <h2>{candidate.title}</h2>
+          <h2>
+            <span className="candidate-rank">#{rank}</span>
+            {candidate.title}
+          </h2>
           <p>{candidate.description}</p>
         </div>
-        <span className="similarity">유사도 {similarity}</span>
+        <div className="score" title="BM25 원점수입니다. 같은 검색 결과 안에서 상대 비교용으로 보세요.">
+          <span>검색 점수 {score}</span>
+          <div className="score-track" aria-hidden="true">
+            <div className="score-fill" style={{ width: `${scoreRatio}%` }} />
+          </div>
+        </div>
       </div>
       <pre className="sql-preview">{candidate.sql}</pre>
       <div className="candidate-header">
@@ -38,4 +51,3 @@ export function CandidateCard({ candidate, selected, onSelect }: Props) {
     </article>
   );
 }
-

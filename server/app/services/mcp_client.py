@@ -143,12 +143,9 @@ class McpClient:
         if value is None or value == "":
             return None
         try:
-            number = float(value)
+            return float(value)
         except (TypeError, ValueError):
             return None
-        if number > 1 and number <= 100:
-            number = number / 100
-        return max(0, min(number, 1))
 
     def _content_text(self, result: CallToolResult) -> str:
         chunks = []
