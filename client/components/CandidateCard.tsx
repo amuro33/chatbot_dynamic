@@ -36,6 +36,7 @@ export function CandidateCard({
   onSelectOption,
 }: Props) {
   const visibleOpts = candidate.recent_options.slice(0, MAX_RECENT_OPTIONS);
+  const tables = candidate.tables ?? [];
   const initials = candidate.author?.name?.slice(0, 1) ?? "?";
 
   const score =
@@ -117,12 +118,12 @@ export function CandidateCard({
       </div>
 
       <div className="tables">
-        <div className="section-label">연관 테이블</div>
+        <div className="section-label">관련 테이블</div>
         <div className="table-list">
-          {candidate.tables.length === 0 ? (
+          {tables.length === 0 ? (
             <span className="param-empty">없음</span>
           ) : (
-            candidate.tables.map((t) => (
+            tables.map((t) => (
               <span key={t} className="table-tag">
                 {t}
               </span>

@@ -24,7 +24,7 @@ export type SqlCandidate = {
   similarity?: number | null;
   parameters: BindParameter[];
   recent_options: QueryLogOption[];
-  tables: string[];
+  tables?: string[] | null;
   author: Author;
 };
 
