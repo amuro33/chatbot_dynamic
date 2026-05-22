@@ -8,3 +8,4 @@ server/app/**/__pycache__/
 .run-logs/
 .env
 .env.local
+!client/.env
