@@ -173,6 +173,45 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 .primary-button:hover { background: var(--accent-strong); }
 .primary-button:active { transform: translateY(1px); }
+.primary-button .spin-icon {
+  animation: spinAround 0.9s linear infinite;
+}
+@keyframes spinAround {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-radius: 14px;
+  border-bottom-left-radius: 6px;
+}
+.typing .label {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0.4;
+  animation: typingPulse 1.2s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typingPulse {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
 
 /* =================================================== */
 /* SQL CANDIDATE CARDS — Vivid variant                  */
@@ -473,7 +512,114 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   color: var(--text);
   letter-spacing: -0.02em;
 }
-.exec-actions { display: flex; gap: 8px; }
+.exec-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mode-toggle {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.mode-toggle button {
+  background: transparent;
+  border: 0;
+  padding: 5px 12px;
+  height: 28px;
+  font-size: 12px;
+  color: var(--text-2);
+  border-radius: 6px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.mode-toggle button:hover { color: var(--text); }
+.mode-toggle button[data-active="true"] {
+  background: #fff;
+  color: var(--accent-strong);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.mode-toggle button[data-active="true"] svg { color: var(--accent); }
+.json-editor {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.json-editor[data-invalid="true"] {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
+}
+.json-editor:focus-within {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.json-editor[data-invalid="true"]:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
+}
+.json-editor textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono-stack);
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  tab-size: 2;
+  caret-color: var(--accent);
+}
+.json-editor textarea::placeholder { color: var(--muted); }
+.json-status {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono-stack);
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  border: 1px solid transparent;
+}
+.json-status[data-ok="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-color: var(--accent-ring);
+}
+.json-status[data-ok="false"] {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.json-status .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.json-hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono-stack);
+  padding: 0 2px;
+}
+.json-hint.err { color: #ef4444; }
 .exec-cancel {
   background: transparent;
   border: 1px solid var(--line);

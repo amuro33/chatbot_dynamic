@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Bot, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { executeSql, searchSql } from "../lib/api";
 import type {
   ExecuteResponse,
@@ -172,6 +172,15 @@ export default function Home() {
     );
   }
 
+  function replacePending(payload: Record<string, unknown>) {
+    setPending((prev) => (prev ? { ...prev, payload } : prev));
+    setMessages((current) =>
+      current.map((m) =>
+        m.type === "execution" ? { ...m, values: payload } : m,
+      ),
+    );
+  }
+
   function cancelPending() {
     setPending(null);
     setMessages((current) => withoutPendingExecution(current));
@@ -269,6 +278,7 @@ export default function Home() {
                       values={message.values}
                       isExecuting={isExecuting}
                       onChange={updatePending}
+                      onReplace={replacePending}
                       onSubmit={runPending}
                       onCancel={cancelPending}
                     />
@@ -291,6 +301,22 @@ export default function Home() {
               </div>
             );
           })}
+
+          {isSearching && (
+            <div className="assistant-row">
+              <div className="avatar">AI</div>
+              <div className="typing">
+                <span className="typing-dots">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+                <span className="label">
+                  자료를 찾는 중이에요. 데이터가 많으면 조금 걸릴 수 있어요
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <form className="composer" onSubmit={onSearch}>
@@ -312,8 +338,12 @@ export default function Home() {
               disabled={isSearching || !query.trim()}
               type="submit"
             >
-              {isSearching ? <Bot size={16} /> : <Send size={16} />}
-              {isSearching ? "검색 중" : "질문 보내기"}
+              {isSearching ? (
+                <Loader2 size={16} className="spin-icon" />
+              ) : (
+                <Send size={16} />
+              )}
+              {isSearching ? "조회 중…" : "질문 보내기"}
             </button>
           </div>
         </form>
