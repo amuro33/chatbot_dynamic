@@ -142,12 +142,6 @@ export default function Home() {
       ...withoutPendingExecution(current),
       {
         id: messageId(),
-        role: "user",
-        type: "text",
-        content: `${candidate.id} 의 옵션 선택`,
-      },
-      {
-        id: messageId(),
         role: "assistant",
         type: "execution",
         candidate,
