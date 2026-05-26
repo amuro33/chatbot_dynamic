@@ -5,12 +5,13 @@ import type { QueryLogOption, SqlCandidate } from "../lib/types";
 type Props = {
   candidate: SqlCandidate;
   rank: number;
+  maxRecentOptions?: number;
   selected: boolean;
   selectedOptionId?: string | null;
   onSelectOption: (candidate: SqlCandidate, option: QueryLogOption) => void;
 };
 
-const MAX_RECENT_OPTIONS = 3;
+const DEFAULT_MAX_OPTIONS = 3;
 
 function formatRanAt(ranAt: string): string {
   if (!ranAt) return "";
@@ -31,11 +32,13 @@ function summaryEntries(option: QueryLogOption): {
 export function CandidateCard({
   candidate,
   rank,
+  maxRecentOptions = DEFAULT_MAX_OPTIONS,
   selected,
   selectedOptionId,
   onSelectOption,
 }: Props) {
-  const visibleOpts = candidate.recent_options.slice(0, MAX_RECENT_OPTIONS);
+  const visibleOpts = candidate.recent_options.slice(0, maxRecentOptions);
+  const hiddenCount = candidate.recent_options.length - visibleOpts.length;
   const tables = candidate.tables ?? [];
   const initials = candidate.author?.name?.slice(0, 1) ?? "?";
 
@@ -113,6 +116,9 @@ export function CandidateCard({
                 </div>
               );
             })}
+            {hiddenCount > 0 && (
+              <div className="option-more">+ {hiddenCount}개 더 보기</div>
+            )}
           </div>
         )}
       </div>
@@ -147,6 +153,30 @@ export function CandidateCard({
             )}
           </div>
         </div>
+        <button
+          className="run-btn"
+          type="button"
+          onClick={() => {
+            const firstOpt = candidate.recent_options[0];
+            if (firstOpt) onSelectOption(candidate, firstOpt);
+          }}
+          disabled={candidate.recent_options.length === 0}
+          title="가장 최근 옵션으로 실행 준비"
+        >
+          실행
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
       </div>
     </article>
   );
